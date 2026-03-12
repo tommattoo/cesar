@@ -31,7 +31,68 @@ case_house_rhone = TestCase(
     ),
 )
 
+# Case 3: Small studio in Paris
+case_paris_studio = TestCase(
+    name="Paris studio 18m2 1 room",
+    input=TestCaseInput(
+        surface_reelle_bati=18.0,
+        nombre_pieces_principales=1.0,
+        code_departement="75",
+        type_local="Appartement",
+    ),
+)
+
+# Case 4: Large house in a rural department
+case_house_rural = TestCase(
+    name="Large house rural department 23",
+    input=TestCaseInput(
+        surface_reelle_bati=200.0,
+        nombre_pieces_principales=8.0,
+        code_departement="23",
+        type_local="Maison",
+    ),
+)
+
+# Case 5: Dependency (Dépendance) in Bordeaux area
+case_dependance_gironde = TestCase(
+    name="Dependance Gironde 20m2",
+    input=TestCaseInput(
+        surface_reelle_bati=20.0,
+        nombre_pieces_principales=1.0,
+        code_departement="33",
+        type_local="Dépendance",
+    ),
+)
+
+# Case 6: Invalid type_local, API should return 422
+case_invalid_type = TestCase(
+    name="Invalid type_local",
+    input=TestCaseInput(
+        surface_reelle_bati=50.0,
+        nombre_pieces_principales=3.0,
+        code_departement="75",
+        type_local="InvalidType",
+    ),
+    expected_status=422,
+)
+
+# Case 7: Corsica, 2A department code
+case_corsica = TestCase(
+    name="Apartment Corsica 2A 60m2",
+    input=TestCaseInput(
+        surface_reelle_bati=60.0,
+        nombre_pieces_principales=3.0,
+        code_departement="2A",
+        type_local="Appartement",
+    ),
+)
+
 ACCEPTANCE_TEST_CASES = [
     case_paris_apartment,
     case_house_rhone,
+    case_paris_studio,
+    case_house_rural,
+    case_dependance_gironde,
+    case_invalid_type,
+    case_corsica,
 ]
