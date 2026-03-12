@@ -6,7 +6,7 @@ from typing import Any
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.preprocessing import OneHotEncoder
 
 # joblib is the recommended way to persist sklearn models (handles numpy arrays and large objects
@@ -50,16 +50,19 @@ def build_feature_matrix(df: pd.DataFrame) -> np.ndarray:
     return np.column_stack([surface.values, pieces.values, dept.values, type_encoded])
 
 
-def train_on_dataframe(df: pd.DataFrame) -> Any:
+def train_on_dataframe(df: pd.DataFrame) -> dict[str, Any]:
     X = build_feature_matrix(df)
     y = df[TARGET_NAME].values.astype(np.float64)
-    reg = RandomForestRegressor(n_estimators=50, max_depth=10, random_state=42)
-    reg.fit(X, y)
-    return reg
+    models = {}
+    for quantile, label in [(0.1, "low"), (0.5, "mid"), (0.9, "high")]:
+    	reg = GradientBoostingRegressor(loss="quantile", alpha=quantile, n_estimators=100, max_depth=5, random_state=42,)
+    	reg.fit(X, y)
+    	models[label] = reg
+    return models
 
 
 def export_artifact(
-    model: Any,
+    models: dict[str, Any],
     artifact_dir: Path,
     model_version: str | None = None,
 ) -> tuple[Path, Path]:
@@ -70,7 +73,7 @@ def export_artifact(
     model_path = artifact_dir / f"model_{version}.joblib"
     contract_path = artifact_dir / f"contract_{version}.json"
 
-    joblib.dump(model, model_path)
+    joblib.dump(models, model_path)
 
     contract = ContractVersion(
         model_version=version,
@@ -105,8 +108,8 @@ def train_from_csv_and_export(
     separator: str = ";",
 ) -> tuple[Path, Path]:
     df = load_dvf_subset_csv(csv_path, separator=separator)
-    model = train_on_dataframe(df)
-    return export_artifact(model, artifact_dir, model_version=model_version)
+    models = train_on_dataframe(df)
+    return export_artifact(models, artifact_dir, model_version=model_version)
 
 
 def load_all_csvs_from_dir(
