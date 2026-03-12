@@ -43,8 +43,9 @@ def request_to_feature_row(request: EstimateRequest, contract: ContractVersion) 
     return np.array(ordered, dtype=np.float64).reshape(1, -1)
 
 
-def estimate_from_model(model: Any, request: EstimateRequest, contract: ContractVersion) -> EstimateResponse:
+def estimate_from_model(models: dict[str, Any], request: EstimateRequest, contract: ContractVersion) -> EstimateResponse:
     X = request_to_feature_row(request, contract)
-    pred = model.predict(X)
-    value = float(pred.flat[0])
-    return EstimateResponse(estimated_value_eur=value)
+    value_mid = float(models["mid"].predict(X).flat[0])
+    value_low = float(models["low"].predict(X).flat[0])
+    value_high = float(models["high"].predict(X).flat[0])
+    return EstimateResponse(estimated_value_eur=value_mid, value_low_eur=value_low, value_high_eur=value_high,)
