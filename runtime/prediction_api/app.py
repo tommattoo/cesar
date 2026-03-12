@@ -36,6 +36,20 @@ def get_artifact() -> tuple[object, ContractVersion]:
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+    
+
+@app.get("/model_info")
+def model_info(
+    artifact: Annotated[tuple[object, ContractVersion], Depends(get_artifact)],
+) -> dict:
+    """Return the loaded model version and feature names."""
+    _, contract = artifact
+    return {
+        "model_version": contract.model_version,
+        "feature_names": contract.feature_names,
+        "target_name": contract.target_name,
+        "type_local_categories": contract.type_local_categories,
+    }
 
 
 @app.post("/estimate/", response_model=EstimateResponse)
