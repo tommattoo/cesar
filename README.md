@@ -1,3 +1,24 @@
+## Project Contributions 1st Update — Tommaso Campi (branch: `my-mlops-project`)
+
+### What was done
+
+1. **`/model_info` endpoint**  
+Added a new GET endpoint in `runtime/prediction_api/app.py`.  
+The endpoint returns the loaded model version, feature names, target name, and property type categories.  
+The idea is to help the UI and support debugging.
+
+2. **Confidence intervals**  
+Replaced the single `RandomForestRegressor` model with three `GradientBoostingRegressor` models.  
+Each model predicts a quantile at the 10th, 50th, and 90th percentile.  
+In this way the API now returns `value_low_eur` and `value_high_eur` together with `estimated_value_eur` in every estimate response.
+This gives a price range instead of a single estimate which is an important factor to take into account when comparing properties.
+
+
+3. **Acceptance tests**  
+Expanded the tests from 2 to 7 cases.  
+The tests cover a Paris studio, a rural house, a property in Corsica with department code `2A`, a `Dépendance` in Gironde, and an invalid `type_local` that returns a 422 error.
+The goal was to verify that the API was working well also for more complex/edge cases.
+
 # CESAR – CentraleSupelec-ESSEC System for Asset Rating
 
 CESAR is a modular system to manage the lifecycle of a property valuation model and its uses: **batch prediction** (CSV in/out), **single-record prediction** (CLI), **HTTP API** (FastAPI), **acceptance tests** against the API, **version comparison** of two APIs, and a minimal **web UI**. 
