@@ -11,6 +11,7 @@ export interface EstimateResult {
   estimated_value_eur: number;
   value_low_eur?: number;
   value_high_eur?: number;
+  anomaly_warning?: string;
 }
 
 export async function fetchEstimate(
