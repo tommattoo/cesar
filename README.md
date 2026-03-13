@@ -1,4 +1,4 @@
-## Project Contributions 1st Update — Tommaso Campi (branch: `my-mlops-project`)
+## Project Contributions 1st Update — Tommaso CAMPI, Alessandro IVASHKEVICH(branch: `my-mlops-project`)
 
 ### What was done
 
@@ -18,6 +18,41 @@ This gives a price range instead of a single estimate which is an important fact
 Expanded the tests from 2 to 7 cases.  
 The tests cover a Paris studio, a rural house, a property in Corsica with department code `2A`, a `Dépendance` in Gironde, and an invalid `type_local` that returns a 422 error.
 The goal was to verify that the API was working well also for more complex/edge cases.
+
+4. **Anomaly detection on /estimate/**                                                                                 
+               
+The /estimate/ endpoint now returns an optional anomaly_warning field. After computing the estimated value, the
+API calculates price per m² and compares it against national thresholds: below 500 €/m² sets "unusually_low",
+above 20 000 €/m² sets "unusually_high", otherwise the field is null. Old clients that ignore unknown fields are
+unaffected.
+
+Changed: prediction_contract/response_schema.py, runtime/inference/estimate_from_artifact.py
+
+5. **UI: confidence interval range** 
+
+The result panel now displays value_low_eur and value_high_eur when the API returns them (requires quantile
+regression model from the training step). The range appears below the point estimate as low – high €.
+
+Changed: runtime/rating_ui/src/api_client.ts, runtime/rating_ui/src/display_estimate.ts
+
+6. **UI: anomaly warning** 
+
+When anomaly_warning is set in the response, the UI shows a short human-readable message in orange beneath the
+estimate, e.g. "This estimate looks unusually high for the given surface." The message is looked up from a small
+dictionary so adding new warning codes later requires one line.
+
+Changed: same files as above.
+
+7. **UI: clickable department map** 
+
+The Leaflet map now loads a GeoJSON layer of French departments from a public source. Hovering a department
+shows its code as a tooltip; clicking it writes the code directly into the department field of the form — no
+manual typing needed. The map and the form are decoupled: the map calls a setDepartement callback passed in from
+main.ts, and knows nothing about the form internals.
+
+Changed: runtime/rating_ui/src/map_france.ts, runtime/rating_ui/src/form_property_params.ts,
+runtime/rating_ui/src/main.ts
+
 
 # CESAR – CentraleSupelec-ESSEC System for Asset Rating
 
@@ -234,40 +269,5 @@ Pick something that excites you and fits your timeline; even one of these will d
 
 
 
+                                                                                         
 
----
-## Implemented features                                                                                            
-
-** Anomaly detection on /estimate/ **                                                                                 
-               
-The /estimate/ endpoint now returns an optional anomaly_warning field. After computing the estimated value, the
-API calculates price per m² and compares it against national thresholds: below 500 €/m² sets "unusually_low",
-above 20 000 €/m² sets "unusually_high", otherwise the field is null. Old clients that ignore unknown fields are
-unaffected.
-
-Changed: prediction_contract/response_schema.py, runtime/inference/estimate_from_artifact.py
-
-** UI: confidence interval range ** 
-
-The result panel now displays value_low_eur and value_high_eur when the API returns them (requires quantile
-regression model from the training step). The range appears below the point estimate as low – high €.
-
-Changed: runtime/rating_ui/src/api_client.ts, runtime/rating_ui/src/display_estimate.ts
-
-** UI: anomaly warning ** 
-
-When anomaly_warning is set in the response, the UI shows a short human-readable message in orange beneath the
-estimate, e.g. "This estimate looks unusually high for the given surface." The message is looked up from a small
-dictionary so adding new warning codes later requires one line.
-
-Changed: same files as above.
-
-** UI: clickable department map ** 
-
-The Leaflet map now loads a GeoJSON layer of French departments from a public source. Hovering a department
-shows its code as a tooltip; clicking it writes the code directly into the department field of the form — no
-manual typing needed. The map and the form are decoupled: the map calls a setDepartement callback passed in from
-main.ts, and knows nothing about the form internals.
-
-Changed: runtime/rating_ui/src/map_france.ts, runtime/rating_ui/src/form_property_params.ts,
-runtime/rating_ui/src/main.ts
