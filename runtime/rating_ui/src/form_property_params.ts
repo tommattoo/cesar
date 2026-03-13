@@ -9,7 +9,11 @@ const TYPE_OPTIONS = [
 
 export type ParamsChangeCallback = (params: EstimateParams) => void;
 
-export function mountForm(container: HTMLElement, onParamsChange: ParamsChangeCallback): void {
+export interface FormControls {
+  setDepartement: (code: string) => void;
+}
+
+export function mountForm(container: HTMLElement, onParamsChange: ParamsChangeCallback): FormControls {
   const form = document.createElement("form");
   form.innerHTML = `
     <label>Surface (m²) <input type="number" name="surface" min="1" step="0.1" value="50" /></label>
@@ -39,4 +43,11 @@ export function mountForm(container: HTMLElement, onParamsChange: ParamsChangeCa
     onParamsChange(params);
   });
   container.appendChild(form);
+
+  const deptInput = form.querySelector<HTMLInputElement>("input[name='departement']")!;
+  return {
+    setDepartement(code: string) {
+      deptInput.value = code;
+    },
+  };
 }

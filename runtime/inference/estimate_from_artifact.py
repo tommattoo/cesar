@@ -43,9 +43,30 @@ def request_to_feature_row(request: EstimateRequest, contract: ContractVersion) 
     return np.array(ordered, dtype=np.float64).reshape(1, -1)
 
 
+_ANOMALY_LOW_EUR_PER_SQM = 500.0    # below this price/m² is suspiciously cheap
+_ANOMALY_HIGH_EUR_PER_SQM = 20_000.0  # above this price/m² is suspiciously expensive
+
+
+def _anomaly_warning(estimated_value: float, surface: float) -> str | None:
+    if surface <= 0:
+        return None
+    price_per_sqm = estimated_value / surface
+    if price_per_sqm < _ANOMALY_LOW_EUR_PER_SQM:
+        return "unusually_low"
+    if price_per_sqm > _ANOMALY_HIGH_EUR_PER_SQM:
+        return "unusually_high"
+    return None
+
+
 def estimate_from_model(models: dict[str, Any], request: EstimateRequest, contract: ContractVersion) -> EstimateResponse:
     X = request_to_feature_row(request, contract)
     value_mid = float(models["mid"].predict(X).flat[0])
     value_low = float(models["low"].predict(X).flat[0])
     value_high = float(models["high"].predict(X).flat[0])
-    return EstimateResponse(estimated_value_eur=value_mid, value_low_eur=value_low, value_high_eur=value_high,)
+    warning = _anomaly_warning(value_mid, request.surface_reelle_bati)
+    return EstimateResponse(
+        estimated_value_eur=value_mid,
+        value_low_eur=value_low,
+        value_high_eur=value_high,
+        anomaly_warning=warning,
+    )

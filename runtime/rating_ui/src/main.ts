@@ -17,10 +17,10 @@ function main(): void {
 
   app.append(formContainer, mapContainer, displayContainer);
 
-  mountForm(formContainer, (params) => {
+  const { setDepartement } = mountForm(formContainer, (params) => {
     window.dispatchEvent(new CustomEvent("cesar-params-change", { detail: params }));
   });
-  mountMap(mapContainer);
+  mountMap(mapContainer, setDepartement);
   mountDisplay(displayContainer);
 }
 
