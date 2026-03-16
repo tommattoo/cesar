@@ -18,6 +18,8 @@ from training.asset_rating_model.train_and_export import (
     export_artifact,
 )
 
+from training.experiment_log import log_run
+
 # Where to find data and where to write the model (relative to repo root).
 DATA_DIR_NAME = "data"
 ARTIFACT_DIR_NAME = "artifact_storage"
@@ -47,6 +49,10 @@ def main() -> None:
     )
     print(f"  Model:  {model_path}")
     print(f"  Contract: {contract_path}")
+    
+    version = model_path.stem.replace("model_", "")
+    log_run(version, train_rows=num_rows, notes=f"{num_files} CSV file(s) from data/")
+    print(f"  Run logged to experiment_runs/runs.csv")
 
     print(
         "Set CESAR_MODEL_PATH and CESAR_CONTRACT_PATH to these paths "
