@@ -51,6 +51,9 @@ def build_feature_matrix(df: pd.DataFrame) -> np.ndarray:
 
 
 def train_on_dataframe(df: pd.DataFrame) -> dict[str, Any]:
+    df = df[df["surface_reelle_bati"] != "surface_reelle_bati"].copy()
+    df = df[df["valeur_fonciere"] != "valeur_fonciere"].copy()
+    df = df.dropna(subset=["valeur_fonciere", "surface_reelle_bati"]).copy()
     X = build_feature_matrix(df)
     y = df[TARGET_NAME].values.astype(np.float64)
     models = {}
@@ -94,7 +97,7 @@ REQUIRED_TRAINING_COLUMNS = set(REQUIRED_TRAINING_COLUMNS_ORDERED)
 
 
 def load_dvf_subset_csv(csv_path: Path, separator: str = ";") -> pd.DataFrame:
-    df = pd.read_csv(csv_path, sep=separator, low_memory=False)
+    df = pd.read_csv(path, sep=None, engine="python")
     missing = REQUIRED_TRAINING_COLUMNS - set(df.columns)
     if missing:
         raise ValueError(f"CSV missing columns: {missing}")
@@ -131,7 +134,7 @@ def load_all_csvs_from_dir(
     frames: list[pd.DataFrame] = []
 
     for path in csv_files:
-        df = pd.read_csv(path, sep=separator, low_memory=False)
+        df = pd.read_csv(path, sep=None, engine="python")
         columns = set(df.columns)
 
         missing = REQUIRED_TRAINING_COLUMNS - columns
