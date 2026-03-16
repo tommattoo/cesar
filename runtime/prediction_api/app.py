@@ -35,6 +35,12 @@ def get_artifact() -> tuple[object, ContractVersion]:
 
 @app.get("/health")
 def health() -> dict[str, str]:
+    model_path = Path(os.environ.get("CESAR_MODEL_PATH", ""))
+    contract_path = Path(os.environ.get("CESAR_CONTRACT_PATH", ""))
+    if not model_path or not contract_path:
+        return {"status": "error", "detail": "model paths not set"}
+    if not model_path.exists() or not contract_path.exists():
+        return {"status": "error", "detail": "model files not found"}
     return {"status": "ok"}
     
 
