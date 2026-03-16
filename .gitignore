@@ -219,3 +219,4 @@ __marimo__/
 # CESAR artifact storage (keep .gitkeep)
 /artifact_storage/*.joblib
 /artifact_storage/contract_*.json
+data/*.csv
