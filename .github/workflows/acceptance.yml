@@ -1,0 +1,34 @@
+name: Acceptance Tests
+
+on:
+  push:
+    branches: [my-mlops-project, feature/*]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -e .
+
+      - name: Train a minimal model for testing
+        run: python -m training.scripts.train_from_minimal_csv
+
+      - name: Start API in background
+        run: |
+          export CESAR_MODEL_PATH=artifact_storage/model_minimal.joblib
+          export CESAR_CONTRACT_PATH=artifact_storage/contract_minimal.json
+          uvicorn runtime.prediction_api.app:app --host 0.0.0.0 --port 8000 &
+          sleep 3
+
+      - name: Run acceptance tests
+        run: |
+          export CESAR_API_URL=http://localhost:8000
+          cesar acceptance-tests run
