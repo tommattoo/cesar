@@ -115,7 +115,7 @@ cesar predict-one run --surface 50 --pieces 3 --departement 75 --type Appartemen
 
 ## API endpoints
 
-| Endpoint | Method | Description |
+| **Endpoint** | **Method** | **Description** |
 | `/health` | GET | Returns ok if model files are present |
 | `/model_info` | GET | Returns model version and feature names |
 | `/estimate/` | POST | Returns estimate, confidence range, anomaly flag |
@@ -140,7 +140,7 @@ data/                  training CSVs (gitignored)
 
 Seven cases covering normal inputs, edge cases, and expected failures:
 
-| Case | Department | Type | Expected |
+| **Case** | **Department** | **Type** | **Expected** |
 | Paris apartment 50m² 3 rooms | 75 | Appartement | pass |
 | House 100m² 5 rooms Rhône | 69 | Maison | pass |
 | Paris studio 18m² 1 room | 75 | Appartement | pass |
