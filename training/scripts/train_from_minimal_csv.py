@@ -39,19 +39,18 @@ def main() -> None:
 
     # Train one model on the combined data.
     print("Training model ...")
-    model = train_on_dataframe(combined)
+    model, mae = train_on_dataframe(combined)
 
-    # Save model and contract with a version name.
     model_path, contract_path = export_artifact(
         model,
         artifact_dir,
         model_version="minimal",
     )
-    print(f"  Model:  {model_path}")
+    print(f"  Model:    {model_path}")
     print(f"  Contract: {contract_path}")
-    
+    print(f"  MAE: {mae:,.0f} €")
     version = model_path.stem.replace("model_", "")
-    log_run(version, train_rows=num_rows, notes=f"{num_files} CSV file(s) from data/")
+    log_run(version, train_rows=num_rows, notes=f"{num_files} CSV file(s) from data/", metrics={"mae": round(mae)})
     print(f"  Run logged to experiment_runs/runs.csv")
 
     print(
