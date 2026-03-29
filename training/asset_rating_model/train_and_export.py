@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.preprocessing import OneHotEncoder
+from sklearn.metrics import mean_absolute_error
 
 # joblib is the recommended way to persist sklearn models (handles numpy arrays and large objects
 # better than pickle). We write a versioned filename (e.g. model_20250101120000.joblib) so
@@ -50,18 +51,22 @@ def build_feature_matrix(df: pd.DataFrame) -> np.ndarray:
     return np.column_stack([surface.values, pieces.values, dept.values, type_encoded])
 
 
-def train_on_dataframe(df: pd.DataFrame) -> dict[str, Any]:
+def train_on_dataframe(df: pd.DataFrame) -> tuple[dict[str, Any], float]:
     df = df[df["surface_reelle_bati"] != "surface_reelle_bati"].copy()
     df = df[df["valeur_fonciere"] != "valeur_fonciere"].copy()
     df = df.dropna(subset=["valeur_fonciere", "surface_reelle_bati"]).copy()
     X = build_feature_matrix(df)
     y = df[TARGET_NAME].values.astype(np.float64)
+    split = int(len(X) * 0.8)
+    X_train, X_test = X[:split], X[split:]
+    y_train, y_test = y[:split], y[split:]
     models = {}
     for quantile, label in [(0.1, "low"), (0.5, "mid"), (0.9, "high")]:
-    	reg = GradientBoostingRegressor(loss="quantile", alpha=quantile, n_estimators=100, max_depth=5, random_state=42,)
-    	reg.fit(X, y)
-    	models[label] = reg
-    return models
+        reg = GradientBoostingRegressor(loss="quantile", alpha=quantile, n_estimators=100, max_depth=5, random_state=42)
+        reg.fit(X_train, y_train)
+        models[label] = reg
+    mae = float(np.mean(np.abs(models["mid"].predict(X_test) - y_test)))
+    return models, mae
 
 
 def export_artifact(
