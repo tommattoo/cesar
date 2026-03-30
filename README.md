@@ -36,15 +36,17 @@ The UI displays all outputs and highlights the anomaly warning in orange when tr
 curl -X POST http://localhost:8000/estimate/ \
   -H "Content-Type: application/json" \
   -d '{"surface_reelle_bati": 50, "nombre_pieces_principales": 3, "code_departement": "75", "type_local": "Appartement"}'
+```
 
+**Example response**
+```json
 {
   "estimated_value_eur": 504134.92,
   "value_low_eur": 289421.20,
   "value_high_eur": 566213.85,
   "anomaly_warning": null
-} 
-
- ```
+}
+```
   
 ## Technical decisions
 
@@ -72,6 +74,12 @@ The current model uses about 200,000 transactions across four departments: Paris
 CSV files are excluded from the repository through `.gitignore`.
 
 To retrain, download CSV files from https://explore.data.gouv.fr/fr/immobilier and place them in `data/`.
+
+The current model has a Mean Absolute Error of about 432,000 € on a held-out test set.
+
+This error is high for urban properties. It reflects the mix of data. The model trains on both dense markets like Paris and rural areas like Creuse. This increases error.
+
+A model trained on one department would reduce error in that market but lose generalization.
 
 ## How to run
 
@@ -116,10 +124,10 @@ cesar predict-one run --surface 50 --pieces 3 --departement 75 --type Appartemen
 ## API endpoints
 
 | **Endpoint** | **Method** | **Description** |
+|---|---|---|
 | `/health` | GET | Returns ok if model files are present |
 | `/model_info` | GET | Returns model version and feature names |
 | `/estimate/` | POST | Returns estimate, confidence range, anomaly flag |
-
 
 ## Repository layout
 ```
@@ -141,6 +149,7 @@ data/                  training CSVs (gitignored)
 Seven cases covering normal inputs, edge cases, and expected failures:
 
 | **Case** | **Department** | **Type** | **Expected** |
+|---|---|---|---|
 | Paris apartment 50m² 3 rooms | 75 | Appartement | pass |
 | House 100m² 5 rooms Rhône | 69 | Maison | pass |
 | Paris studio 18m² 1 room | 75 | Appartement | pass |
@@ -153,16 +162,14 @@ Seven cases covering normal inputs, edge cases, and expected failures:
 ## Contributions
 
 **Tommaso Campi and Alessandro Ivashkevich**
-Training pipeline, quantile regression model, anomaly detection, API endpoints (`/health`,
-`/model_info`, `/estimate/`), acceptance tests, experiment tracking, data ingestion robustness.
-Web UI, interactive France department map, confidence interval display, anomaly warning panel.
+Training pipeline, quantile regression model, anomaly detection, API endpoints (`/health`, `/model_info`, `/estimate/`), acceptance tests, experiment tracking, data ingestion robustness.
+Web UI, interactive France department map, confidence interval display, anomaly warning panel, GitHub Actions CI workflow.
 
 
-## Next steps
+## CI/CD
 
-- **MAE metric in experiment log** — compute Mean Absolute Error on a held-out test set after
-  each training run and pass it to `log_run(metrics={"mae": ...})`, making model comparison
-  across runs meaningful
-- **GitHub Actions CI** — a single workflow file that installs dependencies, starts the API,
-  and runs `cesar acceptance-tests run` on every push                                                                     
+Every push to `my-mlops-project` or any `feature/*` branch automatically runs the full
+acceptance test suite via GitHub Actions. The workflow installs dependencies, trains a minimal
+model, starts the API, and runs all 7 acceptance tests. Status is visible at:
+https://github.com/tommattoo/cesar/actions                           
 
