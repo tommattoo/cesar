@@ -221,3 +221,5 @@ __marimo__/
 /artifact_storage/contract_*.json
 data/*.csv
 !data/dvf_75115_000CM.csv
+runtime/rating_ui/node_modules/
+experiment_runs/
