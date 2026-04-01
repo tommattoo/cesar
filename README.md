@@ -65,6 +65,15 @@ Each training run is logged in `experiment_runs/runs.csv` with a timestamp, row 
 **API introspection**  
 `/health` checks that model files exist before returning ok. `/model_info` returns the contract version and feature names. These endpoints help with deployment and verification.
 
+**Department encoding as categorical**  
+The original model treated `code_departement` as a numeric value such as 75.0 or 23.0. This creates a false linear relationship between departments and prices.
+
+The system now uses one-hot encoding, the same method used for property type. Each department has its own column, so the model learns separate price effects.
+
+The list of departments is stored in the model contract. Training and inference use the same encoding.
+
+Unknown departments are handled with `handle_unknown="ignore"`. All department columns are set to zero in that case.
+
 ## Data
 
 Training data comes from DVF, the French public property transaction registry.
@@ -162,7 +171,7 @@ Seven cases covering normal inputs, edge cases, and expected failures:
 ## Contributions
 
 **Tommaso Campi and Alessandro Ivashkevich**
-Training pipeline, quantile regression model, anomaly detection, API endpoints (`/health`, `/model_info`, `/estimate/`), acceptance tests, experiment tracking, data ingestion robustness.
+Training pipeline, quantile regression model, anomaly detection, API endpoints (`/health`, `/model_info`, `/estimate/`), acceptance tests, experiment tracking, data ingestion robustness, department one-hot encoding.
 Web UI, interactive France department map, confidence interval display, anomaly warning panel, GitHub Actions CI workflow.
 
 
