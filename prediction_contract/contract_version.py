@@ -13,7 +13,8 @@ class ContractVersion(BaseModel):
     feature_names: list[str] = Field(..., min_length=1, description="Feature names in expected order")
     target_name: str = Field(..., description="Target column name (e.g. valeur_fonciere)")
     type_local_categories: list[str] = Field(..., description="Categories for type_local (one-hot or ordinal)")
-
+    department_categories: list[str] = Field(..., description="Department codes the model was trained on")
+    
     def to_serializable(self) -> dict[str, Any]:
         return self.model_dump()
 
