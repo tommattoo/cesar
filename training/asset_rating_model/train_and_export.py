@@ -21,6 +21,13 @@ from prediction_contract.feature_schema import (
 )
 from prediction_contract.contract_version import ContractVersion
 
+from prediction_contract.feature_schema import (
+    TARGET_NAME,
+    TYPE_LOCAL_CATEGORIES,
+    DEPARTMENT_CATEGORIES,
+    MODEL_FEATURE_NAMES,
+)
+
 
 def _code_departement_to_numeric(ser: pd.Series) -> pd.Series:
     def map_one(val: str) -> float:
@@ -39,23 +46,27 @@ def _code_departement_to_numeric(ser: pd.Series) -> pd.Series:
     return ser.map(map_one)
 
 
-def build_feature_matrix(df: pd.DataFrame) -> np.ndarray:
+def build_feature_matrix(df: pd.DataFrame, department_categories: list[str]) -> np.ndarray:
     surface = df["surface_reelle_bati"].fillna(0.0).astype(np.float64)
     pieces = df["nombre_pieces_principales"].fillna(0.0).astype(np.float64)
-    dept = _code_departement_to_numeric(df["code_departement"].astype(str))
+
+    dept = df["code_departement"].astype(str).str.strip()
+    dept_encoder = OneHotEncoder(categories=[department_categories], sparse_output=False, handle_unknown="ignore")
+    dept_encoded = dept_encoder.fit_transform(dept.values.reshape(-1, 1))
 
     type_local = df["type_local"].fillna("Appartement").astype(str)
-    encoder = OneHotEncoder(categories=[TYPE_LOCAL_CATEGORIES], sparse_output=False)
-    type_encoded = encoder.fit_transform(type_local.values.reshape(-1, 1))
+    type_encoder = OneHotEncoder(categories=[TYPE_LOCAL_CATEGORIES], sparse_output=False)
+    type_encoded = type_encoder.fit_transform(type_local.values.reshape(-1, 1))
 
-    return np.column_stack([surface.values, pieces.values, dept.values, type_encoded])
+    return np.column_stack([surface.values, pieces.values, dept_encoded, type_encoded])
+
 
 
 def train_on_dataframe(df: pd.DataFrame) -> tuple[dict[str, Any], float]:
     df = df[df["surface_reelle_bati"] != "surface_reelle_bati"].copy()
     df = df[df["valeur_fonciere"] != "valeur_fonciere"].copy()
     df = df.dropna(subset=["valeur_fonciere", "surface_reelle_bati"]).copy()
-    X = build_feature_matrix(df)
+    X = build_feature_matrix(df, DEPARTMENT_CATEGORIES)
     y = df[TARGET_NAME].values.astype(np.float64)
     split = int(len(X) * 0.8)
     X_train, X_test = X[:split], X[split:]
@@ -88,6 +99,7 @@ def export_artifact(
         feature_names=MODEL_FEATURE_NAMES,
         target_name=TARGET_NAME,
         type_local_categories=TYPE_LOCAL_CATEGORIES,
+        department_categories=DEPARTMENT_CATEGORIES,
     )
     contract_path.write_text(json.dumps(contract.to_serializable(), indent=2), encoding="utf-8")
 
