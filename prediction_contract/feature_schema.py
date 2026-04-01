@@ -12,10 +12,15 @@ TYPE_LOCAL_CATEGORIES: list[str] = [
     "Local industriel. commercial ou assimilé",
 ]
 
+DEPARTMENT_CATEGORIES: list[str] = [
+    "23", "2A", "33", "48", "69", "75",
+]
+
 # Order of columns in the design matrix (after encoding). Used by train_and_export and contract.
 MODEL_FEATURE_NAMES: list[str] = [
     "surface_reelle_bati",
     "nombre_pieces_principales",
     "code_departement",
+    *[f"dept_{c}" for c in DEPARTMENT_CATEGORIES],
     *[f"type_local_{c}" for c in TYPE_LOCAL_CATEGORIES],
 ]
