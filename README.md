@@ -182,3 +182,14 @@ acceptance test suite via GitHub Actions. The workflow installs dependencies, tr
 model, starts the API, and runs all 7 acceptance tests. Status is visible at:
 https://github.com/tommattoo/cesar/actions                           
 
+## Model comparison
+
+To compare predictions from two model versions running on different API instances:
+
+```bash
+python -m comparison.compare_two_apis http://localhost:8000 http://localhost:8001
+```
+
+This sends the same six valid acceptance-test inputs to both URLs and prints a side-by-side table with estimated value, confidence range, and the difference in euros between the two models.
+
+Typical use: train two models on different data subsets, start each API on a different port, and run the comparison to see how predictions diverge.
