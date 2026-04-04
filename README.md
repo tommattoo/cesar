@@ -1,35 +1,26 @@
 # CESAR: Property Valuation System
 
-CESAR is an end-to-end property valuation system built on French public transaction data.
+## Problem Statement
 
-It takes a property description as input and returns an estimated market value, a confidence range, and flags anomalous estimates.
+Estimating property value in France is unclear. Buyers, sellers, and advisors rely on guesswork or costly estimates. Public transaction data exists but is hard to use without technical skills. CESAR makes this data easy to access. It gives an estimate, a confidence range, and a flag when the result looks unusual.
 
-CESAR provides a REST API, a command-line interface, and a web interface.
+## What it is
 
+CESAR is a property valuation tool. The user enters details like surface area, number of rooms, department, and property type. The tool returns an estimated market value in euros. It also shows a confidence level and flags results that look too high or too low.
+It is accessible via a web interface, a REST API, and a command-line tool.
 
-## System Overview
+## How it works
 
-The system is structured around four concerns.
+The system is build on Demandes de Valeurs Foncières. A machine learning model trains on real transactions and predicts property values from four inputs. The model runs through a FastAPI service and a web interface built with Leaflet.
 
-Training loads DVF transaction data, trains a quantile regression model, and exports a versioned artifact.
+The system has four parts:
 
-API serves estimates over HTTP with validation, anomaly detection, and model introspection.
+Training: loads DVF data, trains a quantile regression model, exports a versioned model
+API: returns estimates over HTTP with input checks, anomaly flags, and model details
+UI: a browser app with a map of France and a results panel
+Quality: acceptance tests on the live API and an experiment log to track runs
 
-UI provides a browser interface with an interactive map of France and a result panel.
-
-Quality includes acceptance tests that run against the live API and an experiment log to track training runs.
-
-## What it does
-
-A user provides four inputs: surface area, number of rooms, department, and property type.
-
-The system returns an estimated value, a confidence range, and an anomaly flag.
-
-`estimated_value_eur` is the median estimate.  
-`value_low_eur` and `value_high_eur` define the 10th and 90th percentile range.  
-`anomaly_warning` flags cases where the price per m² falls outside a plausible national range.
-
-The UI displays all outputs and highlights the anomaly warning in orange when triggered.
+## What we built
 
 **Example request**
 ```bash
@@ -47,11 +38,15 @@ curl -X POST http://localhost:8000/estimate/ \
   "anomaly_warning": null
 }
 ```
-  
+
+ 
 ## Technical decisions
 
 **Quantile regression instead of a point estimate**  
-The original model returned one value. The system now uses three `GradientBoostingRegressor` models trained at the 10th, 50th, and 90th percentiles. This produces a range and avoids false precision.
+The original model returned one value. The system now uses three `GradientBoostingRegressor` models trained at the 10th, 50th, and 90th percentiles. This produces a range and avoids false precision becoming more honest and more useful for real decisions.
+
+**Department encoding as categorical**  
+Department codes are labels, not numbers. Treating 75 as higher than 23 has no geographic meaning. We use one-hot encoding. The model learns one price adjustment per department. The department list sits in the contract so training and inference stay consistent.
 
 **Anomaly detection based on price per m²**  
 The API computes price per m² and compares it to national thresholds. Below 500 €/m² is flagged as low. Above 20,000 €/m² is flagged as high. This uses a simple rule. It stays transparent and easy to adjust.
@@ -65,14 +60,6 @@ Each training run is logged in `experiment_runs/runs.csv` with a timestamp, row 
 **API introspection**  
 `/health` checks that model files exist before returning ok. `/model_info` returns the contract version and feature names. These endpoints help with deployment and verification.
 
-**Department encoding as categorical**  
-The original model treated `code_departement` as a numeric value such as 75.0 or 23.0. This creates a false linear relationship between departments and prices.
-
-The system now uses one-hot encoding, the same method used for property type. Each department has its own column, so the model learns separate price effects.
-
-The list of departments is stored in the model contract. Training and inference use the same encoding.
-
-Unknown departments are handled with `handle_unknown="ignore"`. All department columns are set to zero in that case.
 
 ## Data
 
@@ -89,6 +76,14 @@ The current model has a Mean Absolute Error of about 432,000 € on a held-out t
 This error is high for urban properties. It reflects the mix of data. The model trains on both dense markets like Paris and rural areas like Creuse. This increases error.
 
 A model trained on one department would reduce error in that market but lose generalization.
+
+## What we would have liked to implement
+With more time, we would focus on two areas:
+**Department specific models**. Train one model per department and route each request to the right model. This would reduce MAE in areas with enough data. The contract system already supports versioned models. Only routing logic is missing.
+
+**Automated retraining pipeline** Retraining is manual. New DVF data must be downloaded and the training script run by hand. Next step. Add a scheduled job, such as a monthly GitHub Actions workflow. It downloads new DVF data, retrains the model, runs tests, and promotes the model only if tests pass.
+
+Most pieces exist. The pipeline handles new data. Tests run in CI. The experiment log tracks runs. What is missing is the trigger and the promotion step.
 
 ## How to run
 
@@ -151,6 +146,7 @@ model_acceptance_tests/ test cases and runner
 cli/                   command-line entrypoints
 artifact_storage/      versioned model and contract files (gitignored)
 data/                  training CSVs (gitignored)
+comparison/            script to compare predictions from two API versions
 ```
 
 ## Acceptance tests
@@ -168,20 +164,6 @@ Seven cases covering normal inputs, edge cases, and expected failures:
 | Invalid type_local | 75 | InvalidType | 422 |
 
 
-## Contributions
-
-**Tommaso Campi and Alessandro Ivashkevich**
-Training pipeline, quantile regression model, anomaly detection, API endpoints (`/health`, `/model_info`, `/estimate/`), acceptance tests, experiment tracking, data ingestion robustness, department one-hot encoding.
-Web UI, interactive France department map, confidence interval display, anomaly warning panel, GitHub Actions CI workflow.
-
-
-## CI/CD
-
-Every push to `my-mlops-project` or any `feature/*` branch automatically runs the full
-acceptance test suite via GitHub Actions. The workflow installs dependencies, trains a minimal
-model, starts the API, and runs all 7 acceptance tests. Status is visible at:
-https://github.com/tommattoo/cesar/actions                           
-
 ## Model comparison
 
 To compare predictions from two model versions running on different API instances:
@@ -193,3 +175,20 @@ python -m comparison.compare_two_apis http://localhost:8000 http://localhost:800
 This sends the same six valid acceptance-test inputs to both URLs and prints a side-by-side table with estimated value, confidence range, and the difference in euros between the two models.
 
 Typical use: train two models on different data subsets, start each API on a different port, and run the comparison to see how predictions diverge.
+
+
+## CI/CD
+
+Every push to `my-mlops-project` or any `feature/*` branch automatically runs the full
+acceptance test suite via GitHub Actions. The workflow installs dependencies, trains a minimal
+model, starts the API, and runs all 7 acceptance tests. Status is visible at:
+https://github.com/tommattoo/cesar/actions  
+
+                       
+
+## Contributions
+
+**Tommaso Campi and Alessandro Ivashkevich**
+Training pipeline, quantile regression model, anomaly detection, API endpoints (`/health`, `/model_info`, `/estimate/`), acceptance tests, experiment tracking, data ingestion robustness, department one-hot encoding.
+Web UI, interactive France department map, confidence interval display, anomaly warning panel, GitHub Actions CI workflow.
+  
